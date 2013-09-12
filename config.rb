@@ -19,57 +19,30 @@ asset_cache_buster do |http_path, real_path|
     "hoge"
 end
 
+sprites = Array.new
+
 # スプライト画像が保存された直後のコールバック
 on_sprite_saved do |filename|
-    # スプライト画像のファイル末に付くランダムな文字列を削除する
-    if File.exists?(filename)
-        FileUtils.cp filename, filename.gsub(%r{-s[a-z0-9]{10}\.png$}, '.png')
-        # Note: Compass outputs both with and without random hash images.
-        # To not keep the one with hash, add: (Thanks to RaphaelDDL for this)
-        FileUtils.rm_rf(filename)
-    end
+    sprites << filename
 end
-
-# スプライト画像が生成された直後のコールバック
-on_sprite_generated do |filename|
-    nil
-end
-
 
 # スタイルシートが保存された直後のコールバック
 on_stylesheet_saved do |filename|
-
-    # @cahrsetが出力された場合は削除する
-    results = system("sed".concat(" -i '' -e '/@charset.*;/d' ").concat(filename))
-    #results = system("sed".concat(" -i '' -n -e 's/@charset.*;//g' ").concat(filename))
-
-    # @cahrsetが出力された場合は削除する（windowsなどでsedコマンドがない場合）
-    if !results then
-        out = ""
-        File.open(filename, "r") do |io|
-            line = io.read
-            c = line.match("@charset")
-            if c.nil? then
-                out.concat(line)
-            else
-                out.concat(line.gsub(/@charset.*;/, ""))
-            end
-        end
-
-        File.open(filename, "w") do |io|
-            io.write(out)
+    # スプライト画像のファイル末に付くランダムな文字列を削除する
+    for sprite in sprites do
+        if File.exists?(sprite)
+            FileUtils.cp sprite, sprite.gsub(%r{-s[a-z0-9]{10}\.png$}, '.png')
+            FileUtils.rm_rf(sprite)
         end
     end
 
-
     # スプライト画像のファイル末に付くランダムな文字列を削除する
     if File.exists?(filename)
-        css = File.read filename
-        File.open(filename, 'w+') do |f|
+        css = File.read(filename, :encoding => Encoding::UTF_8)
+        File.open(filename, 'w+:utf-8') do |f|
           f << css.gsub(/@charset.*;\n/, '').gsub(%r{-s[a-z0-9]{10}\.png}, '.png')
           #f << css.gsub(%r{-s[a-z0-9]{10}\.png}, '.png')
         end
     end
 end
-
 
